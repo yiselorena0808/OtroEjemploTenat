@@ -1,53 +1,100 @@
-import type { HttpContext } from '@adonisjs/core/http'
 import UsuarioService from '#services/UsuarioService'
+import type { HttpContext } from '@adonisjs/core/http'
 
 const usuarioService = new UsuarioService()
 
 export default class UsuarioController {
-  private service = usuarioService
+  private service = new UsuarioService()
 
-  // Endpoint para registrar usuario
   async register({ request, response }: HttpContext) {
-    const datos = request.only([
-      'id_empresa', 'id_area', 'nombre', 'apellido',
-      'nombre_usuario', 'correo_electronico', 'cargo',
-      'contrasena', 'confirmacion'
+    const {
+      id_empresa,
+      id_area,
+      nombre,
+      apellido,
+      nombre_usuario,
+      correo_electronico,
+      cargo,
+      contrasena,
+      confirmacion
+    } = request.only([
+      'id_empresa',
+      'id_area',
+      'nombre',
+      'apellido',
+      'nombre_usuario',
+      'correo_electronico',
+      'cargo',
+      'contrasena',
+      'confirmacion'
     ])
 
-    const resultado = await this.service.register(
-      datos.id_empresa,
-      datos.id_area,
-      datos.nombre,
-      datos.apellido,
-      datos.nombre_usuario,
-      datos.correo_electronico,
-      datos.cargo,
-      datos.contrasena,
-      datos.confirmacion
+    const resultado = await usuarioService.register(
+      id_empresa,
+      id_area,
+      nombre,
+      apellido,
+      nombre_usuario,
+      correo_electronico,
+      cargo,
+      contrasena,
+      confirmacion
     )
 
     return response.status(201).json(resultado)
   }
 
-  // Login - devuelve token JWT
   async login({ request, response }: HttpContext) {
     const { correo_electronico, contrasena } = request.only([
-      'correo_electronico', 'contrasena'
+      'correo_electronico',
+      'contrasena'
     ])
-    const resultado = await this.service.login(correo_electronico, contrasena)
+    const resultado = await usuarioService.login(correo_electronico, contrasena)
     return response.json(resultado)
   }
 
-  // Obtener usuario logueado mediante token
-  async usuarioLogueado({ auth, response }: HttpContext) {
+  async listarUsuarios({ response }: HttpContext) {
     try {
-      const usuario = auth.user
-      if (!usuario) {
-        return response.unauthorized({ mensaje: 'Token inválido o expirado' })
-      }
-      return response.ok(usuario)
+      const empresaId = (response as any).empresaId
+      return this.service.listar(empresaId)
     } catch (error) {
-      return response.internalServerError({ mensaje: error.message })
+      return response.json({ error: error.message })
     }
+  }
+
+  async listarUsuarioId({ params, response }: HttpContext) {
+    try {
+    const empresaId = (response as any).empresaId
+    const usuario = await usuarioService.listarId(params.id, empresaId)
+    return response.json(usuario)
+    } catch (error) {
+      return response.json({ error: error.message })
+    }
+  }
+
+  async actualizarUsuario({ params, request, response }: HttpContext) {
+    try {
+    const datos = request.all()
+    const empresaId = (response as any).empresaId
+    const usuario = await usuarioService.actualizar(params.id, datos, empresaId)
+    return response.json(usuario)
+    } catch (error) {
+      return response.json({ error: error.message })
+    }
+  }
+
+  async eliminarUsuario({ params, response }: HttpContext) {
+    try {
+    const empresaId = (response as any).empresaId
+    const resultado = await usuarioService.eliminar(params.id, empresaId)
+    return response.json(resultado)
+    } catch (error) {
+      return response.json({ error: error.message })
+    }
+  }
+
+  async conteoUsuarios({ response }: HttpContext) {
+    const conteo = await usuarioService.conteo()
+    return response.json(conteo)
   }
 }

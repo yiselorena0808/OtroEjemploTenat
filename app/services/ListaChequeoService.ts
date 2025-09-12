@@ -1,63 +1,31 @@
 import ListaChequeo from '#models/lista_chequeo'
 
-class ListaChequeoService {
-  async crear(empresaId: number, datos: any) {
-    const lista = await ListaChequeo.create({
-      ...datos,
-      id_empresa: empresaId,
-    })
-
-    return lista
+export default class ListaChequeoService {
+  async crear(datos: any) {
+    return await ListaChequeo.create(datos)
   }
 
-  async listar(empresaId: number) {
-    return await ListaChequeo.query().where('id_empresa', empresaId)
+  async listar(id_empresa: number) {
+    return await ListaChequeo.query().where('id_empresa', id_empresa)
   }
 
-  async listarId(id: number, empresaId: number) {
-    return await ListaChequeo.query()
-    .where('id', id)
-    .andWhere('id_empresa', empresaId)
-    .first()
-  }
-
- async actualizar(id: number, empresaId:number,datos: any) {
-  const lista = await ListaChequeo.find(id) // busca por primary key
-   if(!lista) {
-      return {error: 'lista no encontrada'}
-   }
-
-   if (empresaId && lista.id_empresa !== empresaId) {
-     return { error: 'No autorizado para actualizar esta lista' }
-   }
-
-    lista.merge(datos)
-    await lista.save()
-    return lista
-}
- 
-
-  async eliminar(id: number, empresaId: number) {
+  async actualizar(id: number, id_empresa: number, datos: any) {
     const lista = await ListaChequeo.query()
-    .where('id', id)
-    .andWhere('id_empresa', empresaId)
-    .first()
+      .where('id', id)
+      .where('id_empresa', id_empresa)
+      .firstOrFail()
 
-    if(!lista) {
-      return { error: 'Lista no encontrada o no autorizada' }
-    }
+    await lista.merge(datos).save()
+    return lista
+  }
+
+  async eliminar(id: number, id_empresa: number) {
+    const lista = await ListaChequeo.query()
+      .where('id', id)
+      .where('id_empresa', id_empresa)
+      .firstOrFail()
 
     await lista.delete()
-    return { mensaje: 'Lista eliminada correctamente'}
-  }
-
-  async conteo() {
-    const listas = await ListaChequeo.query()
-    return {
-      total: listas.length,
-      listas,
-    }
+    return { mensaje: 'Lista eliminada correctamente' }
   }
 }
-
-export default ListaChequeoService

@@ -1,50 +1,88 @@
 import ListaChequeoService from '#services/ListaChequeoService'
 import { messages } from '@vinejs/vine/defaults'
-import type { HttpContext} from '@adonisjs/core/http'
+import type { HttpContext } from '@adonisjs/core/http'
 
+export default class ListaChequeoController {
+  private service: ListaChequeoService
 
+  constructor() {
+    this.service = new ListaChequeoService()
+  }
 
-class ListaChequeoController {
-private service = new ListaChequeoService()
-
+  // Crear lista
   async crearLista({ request, response }: HttpContext) {
     try {
-      const datos = request.only(['id_usuario','usuario_nombre', 'fecha', 'hora', 'modelo', 'marca', 'soat', 'tecnico', 'kilometraje']) as any
-      datos.id_empresa = (request as any).empresaId
-      const empresaId = (request as any).empresaId
-      return this.service.crear(empresaId, datos)
+      const datos = request.only([
+        'fecha',
+        'hora',
+        'modelo',
+        'marca',
+        'soat',
+        'tecnico',
+        'kilometraje',
+      ]) as any
+
+      const user = (request as any).user
+      if (!user) {
+        return response.unauthorized({ error: 'Usuario no autenticado' })
+      }
+
+      datos.id_usuario = user.id
+      datos.usuario_nombre = user.nombre  // 👈 ahora sí el nombre real del usuario
+      datos.id_empresa = user.id_empresa
+
+      const nuevaLista = await this.service.crear(datos)
+      return response.created(nuevaLista)
     } catch (error) {
-      return response.json({ error: error.message, messages })
+      console.error('Error crearLista:', error)
+      return response.status(500).json({ error: error.message, messages })
     }
   }
 
-  async listarListas({ response }: HttpContext) {
+  // Listar listas
+  async listarListas({ response, request }: HttpContext) {
     try {
-      const empresaId = (Request as any).empresaId
-      return this.service.listar(empresaId)
+      const user = (request as any).user
+      const listas = await this.service.listar(user.id_empresa)
+      return response.ok(listas)
     } catch (error) {
-      return response.json({ error: error.message, messages })
+      console.error('Error listarListas:', error)
+      return response.status(500).json({ error: error.message, messages })
     }
   }
-  async actualizarLista({request,response,params}: HttpContext) {
+
+  // Actualizar lista
+  async actualizarLista({ request, response, params }: HttpContext) {
     try {
       const id = params.id
-      const datos = request.only(['id_usuario','usuario_nombre', 'fecha', 'hora', 'modelo', 'marca', 'soat', 'tecnico', 'kilometraje'])
-      const empresaId = (request as any).empresaId
-      return this.service.actualizar(id, empresaId,datos)
+      const datos = request.only([
+        'fecha',
+        'hora',
+        'modelo',
+        'marca',
+        'soat',
+        'tecnico',
+        'kilometraje',
+      ])
+
+      const user = (request as any).user
+      const lista = await this.service.actualizar(id, user.id_empresa, datos)
+      return response.ok(lista)
     } catch (error) {
-      return response.json({ error: error.message, messages })
+      console.error('Error actualizarLista:', error)
+      return response.status(500).json({ error: error.message, messages })
     }
   }
-  async eliminarLista({ params, response }: HttpContext) {
+
+  // Eliminar lista
+  async eliminarLista({ params, response, request }: HttpContext) {
     try {
-      const id = params.id
-      const empresaId = (Request as any).empresaId
-      return this.service.eliminar(id, empresaId)
+      const user = (request as any).user
+      const result = await this.service.eliminar(params.id, user.id_empresa)
+      return response.ok(result)
     } catch (error) {
-      return response.json({ error: error.message, messages })
-    }
-  }
+      console.error('Error eliminarLista:', error)
+      return response.status(500).json({ error: error.message, messages })
+    }
+  }
 }
-
-export default ListaChequeoController

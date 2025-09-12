@@ -1,6 +1,7 @@
 import Empresa from '#models/empresa'
 
 export default class EmpresaService {
+  
   // Crear empresa
   async crear(datos: any) {
     return Empresa.create(datos)
